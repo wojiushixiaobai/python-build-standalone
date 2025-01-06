@@ -281,39 +281,40 @@ pub static RELEASE_TRIPLES: Lazy<BTreeMap<&'static str, TripleRelease>> = Lazy::
             }],
         },
     );
+    // TODO: Python 3.14 support on musl
     h.insert(
         "x86_64-unknown-linux-musl",
         TripleRelease {
-            suffixes: linux_suffixes_pgo.clone(),
-            install_only_suffix: "pgo+lto",
-            python_version_requirement: None,
+            suffixes: linux_suffixes_nopgo.clone(),
+            install_only_suffix: "lto",
+            python_version_requirement: Some(VersionSpecifier::from_str("<3.14").unwrap()),
             conditional_suffixes: vec![],
         },
     );
     h.insert(
         "x86_64_v2-unknown-linux-musl",
         TripleRelease {
-            suffixes: linux_suffixes_pgo.clone(),
-            install_only_suffix: "pgo+lto",
-            python_version_requirement: Some(VersionSpecifier::from_str(">=3.9").unwrap()),
+            suffixes: linux_suffixes_nopgo.clone(),
+            install_only_suffix: "lto",
+            python_version_requirement: Some(VersionSpecifier::from_str("<3.14").unwrap()),
             conditional_suffixes: vec![],
         },
     );
     h.insert(
         "x86_64_v3-unknown-linux-musl",
         TripleRelease {
-            suffixes: linux_suffixes_pgo.clone(),
-            install_only_suffix: "pgo+lto",
-            python_version_requirement: Some(VersionSpecifier::from_str(">=3.9").unwrap()),
+            suffixes: linux_suffixes_nopgo.clone(),
+            install_only_suffix: "lto",
+            python_version_requirement: Some(VersionSpecifier::from_str("<3.14").unwrap()),
             conditional_suffixes: vec![],
         },
     );
     h.insert(
         "x86_64_v4-unknown-linux-musl",
         TripleRelease {
-            suffixes: linux_suffixes_pgo.clone(),
-            install_only_suffix: "pgo+lto",
-            python_version_requirement: Some(VersionSpecifier::from_str(">=3.9").unwrap()),
+            suffixes: linux_suffixes_nopgo.clone(),
+            install_only_suffix: "lto",
+            python_version_requirement: Some(VersionSpecifier::from_str("<3.14").unwrap()),
             conditional_suffixes: vec![],
         },
     );
