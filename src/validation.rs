@@ -238,7 +238,10 @@ static ELF_ALLOWED_LIBRARIES_BY_TRIPLE: Lazy<HashMap<&'static str, Vec<&'static 
             ),
             ("mips64el-unknown-linux-gnuabi64", vec![]),
             ("ppc64le-unknown-linux-gnu", vec!["ld64.so.1", "ld64.so.2"]),
-            ("riscv64-unknown-linux-gnu", vec!["ld-linux-riscv64-lp64d.so.1", "libatomic.so.1"]),
+            (
+                "riscv64-unknown-linux-gnu",
+                vec!["ld-linux-riscv64-lp64d.so.1", "libatomic.so.1"],
+            ),
             ("s390x-unknown-linux-gnu", vec!["ld64.so.1"]),
             ("x86_64-unknown-linux-gnu", vec!["ld-linux-x86-64.so.2"]),
             ("x86_64_v2-unknown-linux-gnu", vec!["ld-linux-x86-64.so.2"]),
@@ -391,6 +394,11 @@ static DARWIN_ALLOWED_DYLIBS: Lazy<Vec<MachOAllowedDylib>> = Lazy::new(|| {
             },
             MachOAllowedDylib {
                 name: "/System/Library/Frameworks/SystemConfiguration.framework/Versions/A/SystemConfiguration".to_string(),
+                max_compatibility_version: "1.0.0".try_into().unwrap(),
+                required: true,
+            },
+            MachOAllowedDylib {
+                name: "/System/Library/Frameworks/UniformTypeIdentifiers.framework/Versions/A/UniformTypeIdentifiers".to_string(),
                 max_compatibility_version: "1.0.0".try_into().unwrap(),
                 required: true,
             },
