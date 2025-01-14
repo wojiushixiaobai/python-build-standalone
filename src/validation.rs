@@ -137,6 +137,9 @@ const PE_ALLOWED_LIBRARIES: &[&str] = &[
     "tk86t.dll",
 ];
 
+// CPython 3.14 uses tcl/tk 8.6.14+ which includes a bundled zlib and dynamically links to msvcrt.
+const PE_ALLOWED_LIBRARIES_314: &[&str] = &["msvcrt.dll", "zlib1.dll"];
+
 static GLIBC_MAX_VERSION_BY_TRIPLE: Lazy<HashMap<&'static str, version_compare::Version<'static>>> =
     Lazy::new(|| {
         let mut versions = HashMap::new();
@@ -795,6 +798,8 @@ const GLOBAL_EXTENSIONS_WINDOWS: &[&str] = &[
     "winsound",
 ];
 
+const GLOBAL_EXTENSIONS_WINDOWS_3_14: &[&str] = &["_wmi"];
+
 const GLOBAL_EXTENSIONS_WINDOWS_PRE_3_13: &[&str] = &["_msi"];
 
 /// Extension modules not present in Windows static builds.
@@ -1331,6 +1336,7 @@ fn validate_macho<Mach: MachHeader<Endian = Endianness>>(
 
 fn validate_pe<'data, Pe: ImageNtHeaders>(
     context: &mut ValidationContext,
+    python_major_minor: &str,
     path: &Path,
     pe: &PeFile<'data, Pe, &'data [u8]>,
 ) -> Result<()> {
@@ -1345,6 +1351,18 @@ fn validate_pe<'data, Pe: ImageNtHeaders>(
         while let Some(descriptor) = descriptors.next()? {
             let lib = import_table.name(descriptor.name.get(object::LittleEndian))?;
             let lib = String::from_utf8(lib.to_vec())?;
+
+            match python_major_minor {
+                "3.9" | "3.10" | "3.11" | "3.12" | "3.13" => {}
+                "3.14" => {
+                    if PE_ALLOWED_LIBRARIES_314.contains(&lib.as_str()) {
+                        continue;
+                    }
+                }
+                _ => {
+                    panic!("unhandled Python version: {}", python_major_minor);
+                }
+            }
 
             if !PE_ALLOWED_LIBRARIES.contains(&lib.as_str()) {
                 context
@@ -1451,11 +1469,11 @@ fn validate_possible_object_file(
             }
             FileKind::Pe32 => {
                 let file = PeFile32::parse(data)?;
-                validate_pe(&mut context, path, &file)?;
+                validate_pe(&mut context, python_major_minor, path, &file)?;
             }
             FileKind::Pe64 => {
                 let file = PeFile64::parse(data)?;
-                validate_pe(&mut context, path, &file)?;
+                validate_pe(&mut context, python_major_minor, path, &file)?;
             }
             _ => {}
         }
@@ -1524,6 +1542,10 @@ fn validate_extension_modules(
 
         if matches!(python_major_minor, "3.9" | "3.10" | "3.11" | "3.12") {
             wanted.extend(GLOBAL_EXTENSIONS_WINDOWS_PRE_3_13);
+        }
+
+        if matches!(python_major_minor, "3.14") {
+            wanted.extend(GLOBAL_EXTENSIONS_WINDOWS_3_14);
         }
 
         if static_crt {

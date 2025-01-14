@@ -345,6 +345,7 @@ def hack_props(
     td: pathlib.Path,
     pcbuild_path: pathlib.Path,
     arch: str,
+    python_version: str,
 ):
     # TODO can we pass props into msbuild.exe?
 
@@ -355,8 +356,13 @@ def hack_props(
     sqlite_version = DOWNLOADS["sqlite"]["version"]
     xz_version = DOWNLOADS["xz"]["version"]
     zlib_version = DOWNLOADS["zlib"]["version"]
-    tcltk_commit = DOWNLOADS["tk-windows-bin-8612"]["git_commit"]
+
     mpdecimal_version = DOWNLOADS["mpdecimal"]["version"]
+
+    if meets_python_minimum_version(python_version, "3.14"):
+        tcltk_commit = DOWNLOADS["tk-windows-bin"]["git_commit"]
+    else:
+        tcltk_commit = DOWNLOADS["tk-windows-bin-8612"]["git_commit"]
 
     sqlite_path = td / ("sqlite-autoconf-%s" % sqlite_version)
     bzip2_path = td / ("bzip2-%s" % bzip2_version)
@@ -487,6 +493,7 @@ def hack_project_files(
         td,
         pcbuild_path,
         build_directory,
+        python_version,
     )
 
     # Our SQLite directory is named weirdly. This throws off version detection
@@ -566,9 +573,13 @@ def hack_project_files(
         rb'<ClCompile Include="$(opensslIncludeDir)\openssl\applink.c">',
     )
 
-    # We're still on the pre-built tk-windows-bin 8.6.12 which doesn't have a
-    # standalone zlib DLL. So remove references to it from 3.12+.
-    if meets_python_minimum_version(python_version, "3.12"):
+    # Python 3.12+ uses the the pre-built tk-windows-bin 8.6.12 which doesn't
+    # have a standalone zlib DLL, so we remove references to it. For Python
+    # 3.14+, we're using tk-windows-bin 8.6.14 which includes a prebuilt zlib
+    # DLL, so we skip this patch there.
+    if meets_python_minimum_version(
+        python_version, "3.12"
+    ) and meets_python_maximum_version(python_version, "3.13"):
         static_replace_in_file(
             pcbuild_path / "_tkinter.vcxproj",
             rb'<_TclTkDLL Include="$(tcltkdir)\bin\$(tclZlibDllName)" />',
@@ -1127,6 +1138,10 @@ def collect_python_build_artifacts(
                 if name == "openssl":
                     name = openssl_entry
 
+                # On 3.14+, we use the latest tcl/tk version
+                if ext == "_tkinter" and python_majmin == "314":
+                    name = name.replace("-8612", "")
+
                 download_entry = DOWNLOADS[name]
 
                 # This will raise if no license metadata defined. This is
@@ -1196,9 +1211,6 @@ def build_cpython(
 
     bzip2_archive = download_entry("bzip2", BUILD)
     sqlite_archive = download_entry("sqlite", BUILD)
-    tk_bin_archive = download_entry(
-        "tk-windows-bin-8612", BUILD, local_name="tk-windows-bin.tar.gz"
-    )
     xz_archive = download_entry("xz", BUILD)
     zlib_archive = download_entry("zlib", BUILD)
 
@@ -1209,6 +1221,17 @@ def build_cpython(
 
     setuptools_wheel = download_entry("setuptools", BUILD)
     pip_wheel = download_entry("pip", BUILD)
+
+    # On CPython 3.14+, we use the latest tcl/tk version which has additional runtime
+    # dependencies, so we are conservative and use the old version elsewhere.
+    if meets_python_minimum_version(python_version, "3.14"):
+        tk_bin_archive = download_entry(
+            "tk-windows-bin", BUILD, local_name="tk-windows-bin.tar.gz"
+        )
+    else:
+        tk_bin_archive = download_entry(
+            "tk-windows-bin-8612", BUILD, local_name="tk-windows-bin.tar.gz"
+        )
 
     # CPython 3.13+ no longer uses a bundled `mpdecimal` version so we build it
     if meets_python_minimum_version(python_version, "3.13"):
@@ -1690,6 +1713,7 @@ def main() -> None:
             "cpython-3.11",
             "cpython-3.12",
             "cpython-3.13",
+            "cpython-3.14",
         },
         default="cpython-3.11",
         help="Python distribution to build",
