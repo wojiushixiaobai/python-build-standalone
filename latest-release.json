@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "tag": "20250115",
-  "release_url": "https://github.com/indygreg/python-build-standalone/releases/tag/20250115",
-  "asset_url_prefix": "https://github.com/indygreg/python-build-standalone/releases/download/20250115"
+  "tag": "20250205",
+  "release_url": "https://github.com/astral-sh/python-build-standalone/releases/tag/20250205",
+  "asset_url_prefix": "https://github.com/astral-sh/python-build-standalone/releases/download/20250205"
 }
