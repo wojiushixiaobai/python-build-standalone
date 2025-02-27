@@ -424,6 +424,22 @@ if [ -n "${CPYTHON_OPTIMIZED}" ]; then
     if [[ -n "${PYTHON_MEETS_MINIMUM_VERSION_3_12}" && -n "${BOLT_CAPABLE}" ]]; then
         CONFIGURE_FLAGS="${CONFIGURE_FLAGS} --enable-bolt"
     fi
+
+    # Allow users to enable the experimental JIT on 3.13+
+    if [[ -n "${PYTHON_MEETS_MINIMUM_VERSION_3_13}" ]]; then
+
+        # The JIT build is failing on macOS and 3.14+ due to compiler errors
+        # Only enable on Linux / 3.13 until that's fixed upstream
+        if [[ -n "${PYTHON_MEETS_MAXIMUM_VERSION_3_13}" && "${PYBUILD_PLATFORM}" != "macos" ]]; then
+            CONFIGURE_FLAGS="${CONFIGURE_FLAGS} --enable-experimental-jit=yes-off"
+        fi
+
+        if [[ -n "${PYTHON_MEETS_MAXIMUM_VERSION_3_13}" ]]; then
+            # On 3.13, LLVM 18 is hard-coded into the configure script. Override it to our toolchain
+            # version.
+            patch -p1 -i "${ROOT}/patch-jit-llvm-19.patch"
+        fi
+    fi
 fi
 
 if [ -n "${CPYTHON_LTO}" ]; then
