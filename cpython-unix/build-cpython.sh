@@ -401,6 +401,22 @@ if [ "${CC}" = "musl-clang" ]; then
     done
 fi
 
+# To enable mimalloc (which is hard requirement for free-threaded versions, but preferred in
+# general), we need `stdatomic.h` which is not provided by musl. It's a part of the include files
+# that are part of clang. But musl-clang eliminates them from the default include path. So copy it
+# into place.
+if [[ "${CC}" = "musl-clang" && -n "${PYTHON_MEETS_MINIMUM_VERSION_3_13}" ]]; then
+    for h in /tools/${TOOLCHAIN}/lib/clang/*/include/stdatomic.h; do
+        filename=$(basename "$h")
+        if [ -e "/tools/host/include/${filename}" ]; then
+            echo "${filename} already exists; don't need to copy!"
+            exit 1
+        fi
+        cp "$h" /tools/host/include/
+    done
+fi
+
+
 if [ -n "${CPYTHON_STATIC}" ]; then
     CFLAGS="${CFLAGS} -static"
     CPPFLAGS="${CPPFLAGS} -static"
@@ -416,8 +432,8 @@ if [ -n "${CPYTHON_DEBUG}" ]; then
 fi
 
 # Explicitly enable mimalloc on 3.13+, it's already included by default but with this it'll fail
-# if it's missing from the system. The musl builds do not supprt mimalloc yet.
-if [[ -n "${PYTHON_MEETS_MINIMUM_VERSION_3_13}" && "${CC}" != "musl-clang" ]]; then
+# if it's missing from the system.
+if [[ -n "${PYTHON_MEETS_MINIMUM_VERSION_3_13}" ]]; then
     CONFIGURE_FLAGS="${CONFIGURE_FLAGS} --with-mimalloc"
 fi
 
