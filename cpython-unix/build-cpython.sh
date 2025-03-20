@@ -391,7 +391,7 @@ if [ "${CC}" = "musl-clang" ]; then
     # provided by musl. These are part of the include files that are part of clang.
     # But musl-clang eliminates them from the default include path. So copy them into
     # place.
-    for h in /tools/${TOOLCHAIN}/lib/clang/*/include/*intrin.h /tools/${TOOLCHAIN}/lib/clang/*/include/{__wmmintrin_aes.h,__wmmintrin_pclmul.h,mm_malloc.h}; do
+    for h in /tools/${TOOLCHAIN}/lib/clang/*/include/*intrin.h /tools/${TOOLCHAIN}/lib/clang/*/include/{__wmmintrin_aes.h,__wmmintrin_pclmul.h,mm_malloc.h,cpuid.h}; do
         filename=$(basename "$h")
         if [ -e "/tools/host/include/${filename}" ]; then
             echo "${filename} already exists; don't need to copy!"
@@ -416,7 +416,7 @@ if [ -n "${CPYTHON_DEBUG}" ]; then
 fi
 
 # Explicitly enable mimalloc on 3.13+, it's already included by default but with this it'll fail
-# if it's missing from the system. The MUSL builds do not supprt mimalloc yet.
+# if it's missing from the system. The musl builds do not supprt mimalloc yet.
 if [[ -n "${PYTHON_MEETS_MINIMUM_VERSION_3_13}" && "${CC}" != "musl-clang" ]]; then
     CONFIGURE_FLAGS="${CONFIGURE_FLAGS} --with-mimalloc"
 fi
@@ -974,7 +974,7 @@ s390x-unknown-linux-gnu)
 x86_64-unknown-linux-*)
     # In Python 3.13+, the musl target is identified in cross compiles and the output directory
     # is named accordingly.
-    if [ "${CC}" = "musl-clang" ] && [ "${PYTHON_MAJMIN_VERSION}" = "3.13" ]; then
+    if [[ "${CC}" = "musl-clang" && -n "${PYTHON_MEETS_MINIMUM_VERSION_3_13}" ]]; then
         PYTHON_ARCH="x86_64-linux-musl"
     else
         PYTHON_ARCH="x86_64-linux-gnu"
