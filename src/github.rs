@@ -143,9 +143,10 @@ pub async fn command_fetch_release_distributions(args: &ArgMatches) -> Result<()
         .filter_map(|wf| {
             if matches!(
                 wf.path.as_str(),
-                ".github/workflows/macos.yml"
-                    | ".github/workflows/linux.yml"
-                    | ".github/workflows/windows.yml"
+                ".github/workflows/linux.yml"
+                //".github/workflows/macos.yml"
+                //    | ".github/workflows/linux.yml"
+                //    | ".github/workflows/windows.yml"
             ) {
                 workflow_names.insert(wf.id, wf.name);
 
