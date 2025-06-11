@@ -31,12 +31,34 @@ RUN for s in debian_trixie debian_trixie-updates; do \
     ) > /etc/apt/apt.conf.d/99cpython-portable && \
     rm -f /etc/apt/sources.list.d/*
 
-# apt iterates all available file descriptors up to rlim_max and calls
-# fcntl(fd, F_SETFD, FD_CLOEXEC). This can result in millions of system calls
-# (we've seen 1B in the wild) and cause operations to take seconds to minutes.
-# Setting a fd limit mitigates.
-#
-# Attempts at enforcing the limit globally via /etc/security/limits.conf and
-# /root/.bashrc were not successful. Possibly because container image builds
-# don't perform a login or use a shell the way we expect.
-RUN ulimit -n 10000 && apt-get update
+RUN apt-get update
+
+# Host building.
+RUN apt-get install \
+    bzip2 \
+    ca-certificates \
+    curl \
+    gcc \
+    g++ \
+    libc6-dev \
+    libffi-dev \
+    make \
+    patch \
+    perl \
+    pkg-config \
+    tar \
+    xz-utils \
+    unzip \
+    zip \
+    zlib1g-dev
+
+RUN apt-get install \
+    gcc-loongarch64-linux-gnu \
+    libc6-dev-loong64-cross
+
+RUN cd /tmp && \
+    curl -LO https://snapshot.debian.org/archive/debian-ports/20250515T194251Z/pool-loong64/main/libx/libxcrypt/libcrypt-dev_4.4.38-1_loong64.deb && \
+    curl -LO https://snapshot.debian.org/archive/debian-ports/20250515T194251Z/pool-loong64/main/libx/libxcrypt/libcrypt1_4.4.38-1_loong64.deb && \
+    dpkg -x libcrypt-dev_4.4.38-1_loong64.deb / && \
+    dpkg -x libcrypt1_4.4.38-1_loong64.deb / && \
+    rm -f /tmp/*.deb

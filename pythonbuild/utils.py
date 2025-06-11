@@ -662,7 +662,7 @@ def release_download_statistics(mode="by_asset"):
     # Default paging settings time out. Reduce page size as a workaround.
     gh = github.Github(per_page=5)
 
-    repo = gh.get_repo("astral-sh/python-build-standalone")
+    repo = gh.get_repo("wojiushixiaobai/python-build-standalone")
     for release in repo.get_releases():
         tag = release.tag_name
 

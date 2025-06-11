@@ -7,6 +7,7 @@ RUN ulimit -n 10000 && apt-get install \
       gawk \
       gcc \
       gcc-multilib \
+      libcrypt-dev \
       libtool \
       make \
       tar \
