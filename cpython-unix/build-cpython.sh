@@ -90,12 +90,6 @@ else
     patch -p1 -i ${ROOT}/patch-xopen-source-ios-legacy.patch
 fi
 
-# See https://github.com/python/cpython/pull/135146
-# TODO(zanieb): Drop in 3.14b3
-if [ -n "${PYTHON_MEETS_MINIMUM_VERSION_3_14}" ]; then
-    patch -p1 -i ${ROOT}/patch-static-remote-debug-3.14.patch
-fi
-
 # LIBTOOL_CRUFT is unused and breaks cross-compiling on macOS. Nuke it.
 # Submitted upstream at https://github.com/python/cpython/pull/101048.
 if [ -n "${PYTHON_MEETS_MAXIMUM_VERSION_3_11}" ]; then
@@ -485,7 +479,9 @@ if [ -n "${CPYTHON_OPTIMIZED}" ]; then
         fi
 
         # Respect CFLAGS during JIT compilation.
-        # Backports https://github.com/python/cpython/pull/134276
+        #
+        # Backports https://github.com/python/cpython/pull/134276 which we're trying to get released
+        # in 3.14, but is currently only in 3.15+.
         if [ -n "${PYTHON_MEETS_MINIMUM_VERSION_3_14}" ]; then
             patch -p1 -i ${ROOT}/patch-jit-cflags-314.patch
         elif [ -n "${PYTHON_MEETS_MINIMUM_VERSION_3_13}" ]; then
@@ -653,8 +649,19 @@ fi
 # We patched configure.ac above. Reflect those changes.
 autoconf
 
-# Ensure `CFLAGS` are propagated to JIT compilation for 3.13+
-CFLAGS=$CFLAGS CPPFLAGS=$CFLAGS CFLAGS_JIT=$CFLAGS LDFLAGS=$LDFLAGS \
+# Ensure `CFLAGS` are propagated to JIT compilation for 3.13+ (note this variable has no effect on
+# 3.12 and earlier)
+CFLAGS_JIT="${CFLAGS}"
+
+# In 3.14+, the JIT compiler on x86-64 Linux uses a model that conflicts with `-fPIC`, so strip it
+# from the flags. See:
+# - https://github.com/python/cpython/issues/135690
+# - https://github.com/python/cpython/pull/130097
+if [[ -n "${PYTHON_MEETS_MINIMUM_VERSION_3_14}" && "${TARGET_TRIPLE}" == x86_64* ]]; then
+    CFLAGS_JIT="${CFLAGS_JIT//-fPIC/}"
+fi
+
+CFLAGS=$CFLAGS CPPFLAGS=$CFLAGS CFLAGS_JIT=$CFLAGS_JIT LDFLAGS=$LDFLAGS \
     ./configure ${CONFIGURE_FLAGS}
 
 # Supplement produced Makefile with our modifications.
